@@ -9,15 +9,18 @@ import { SanityAssetDocument } from "@sanity/client";
 import { topics } from "../utils/constants";
 
 const Upload = () => {
+  const { userProfile }: { userProfile: any } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [videoAsset, setVideoAsset] = useState<
     SanityAssetDocument | undefined
   >();
-  const [caption, setCaption] = useState({})
-  const [category, setCategory] = useState(topics[0].name)
-  const [savingPost, setSavingPost] = useState(false)
+  const [caption, setCaption] = useState({});
+  const [category, setCategory] = useState(topics[0].name);
+  const [savingPost, setSavingPost] = useState(false);
   const [wrongFileType, setWrongFileType] = useState(false);
   const [error, setError] = useState(false);
+
+  const router = useRouter()
 
   const uploadVideo = async (e: any) => {
     const selectedFile = e.target.files[0];
@@ -35,6 +38,32 @@ const Upload = () => {
     } else {
       setIsLoading(false);
       setError(true);
+    }
+  };
+
+  const handlePost = async () => {
+    if (caption && videoAsset?._id && category) {
+      setSavingPost(true);
+
+      const document = {
+        _type: "post",
+        caption,
+        video: {
+          _type: "file",
+          asset: {
+            _type: "reference",
+            _ref: videoAsset?._id
+          }
+        },
+        userId: userProfile?._id,
+        postedBy: {
+          _type: "postedBy",
+          _ref: userProfile?._id
+        },
+        topic: category
+      };
+      await axios.post("http://localhost:3000/api/post", document);
+      router.push("/")
     }
   };
   return (
@@ -102,8 +131,8 @@ const Upload = () => {
           <input
             className="rounded outline-none text-md border-gray-200 p-2"
             type="text"
-            value="caption"
             onChange={(e) => setCaption(e.target.value)}
+            value={caption}
           />
           <label className="text-md font-medium">Choose a category</label>
           <select
